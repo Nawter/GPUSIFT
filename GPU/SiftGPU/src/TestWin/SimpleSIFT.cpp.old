@@ -1,0 +1,56 @@
+#include <stdlib.h>
+#include <vector>
+#include <iostream>
+#include <stdio.h>
+using std::vector;
+using std::iostream;
+#include <dlfcn.h>
+#define FREE_MYLIB dlclose
+#define GET_MYPROC dlsym
+#include "../SiftGPU/SiftGPU.h"
+int main()
+{
+    printf("[---SimpleSIFT---Inicio-Main----------]\n");
+    void * hsiftgpu = dlopen("libsiftgpu.so", RTLD_LAZY);
+    if(hsiftgpu == NULL) return 0;
+    printf("[---else------ifdef-------]\n");
+    SiftGPU* (*pCreateNewSiftGPU)(int) = NULL;
+    SiftMatchGPU* (*pCreateNewSiftMatchGPU)(int) = NULL;
+    pCreateNewSiftGPU = (SiftGPU* (*) (int)) GET_MYPROC(hsiftgpu, "CreateNewSiftGPU");
+    pCreateNewSiftMatchGPU = (SiftMatchGPU* (*)(int)) GET_MYPROC(hsiftgpu, "CreateNewSiftMatchGPU");
+    SiftGPU* sift = pCreateNewSiftGPU(1);
+    SiftMatchGPU* matcher = pCreateNewSiftMatchGPU(4096);
+    vector<float > descriptors1(1), descriptors2(1);
+    vector<SiftGPU::SiftKeypoint> keys1(1), keys2(1);    
+    printf("[---SimpleSIFT---Paso-2-Main-------------]\n");
+    int num1 = 0;
+    int num2 = 0;
+    printf("[---SimpleSIFT---Paso-3-Main-------------]\n");
+    char * argv[] = {"-fo", "-1",  "-v", "1","-cuda","0","-maxd","1024"};
+    //char * argv[] = {"-fo", "-1",  "-v", "1","-loweo","-cuda","0","-maxd","1024"};     
+    printf("[---SimpleSIFT---Paso-4-Main-------------]\n");
+    int argc = sizeof(argv)/sizeof(char*);
+    sift->ParseParam(argc, argv);
+    if(sift->CreateContextGL() != SiftGPU::SIFTGPU_FULL_SUPPORTED) 
+    {
+    	return 0;
+    }
+    printf("[---SimpleSIFT---/data/crop001501.png-------]\n");
+    if(sift->RunSIFT("../data/crop001501.png"))
+    {
+        printf("[---SimpleSIFT---Paso-5--begin------------]\n");
+        sift->SaveSIFT("../data/crop001501.sift");    
+        printf("[---SimpleSIFT---Paso-5--end------------]\n");
+    }  
+    printf("[---SimpleSIFT---/data/1600.ppm-------]\n");
+    if(sift->RunSIFT("../data/1600.ppm"))
+    {
+        printf("[---SimpleSIFT---Paso-5--begin------------]\n");
+        sift->SaveSIFT("../data/1600.sift");    
+        printf("[---SimpleSIFT---Paso-5--end------------]\n");
+    }    
+    printf("[---SimpleSIFT---Paso-6-Main-------------]\n");
+    delete sift;
+    printf("[---SimpleSIFT---Fin-Main-------------]\n");
+    return 1;
+}
